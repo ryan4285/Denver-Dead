@@ -1,9 +1,1 @@
-{
-  "name": "Denver Dead: Aerial Survival",
-  "short_name": "Denver Dead",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#111111",
-  "orientation": "portrait"
-}
+{"name":"Denver Dead","short_name":"Denver Dead","start_url":"./index.html","display":"standalone","background_color":"#0e0f11","theme_color":"#111111","description":"Aerial zombie survival in Denver."}
