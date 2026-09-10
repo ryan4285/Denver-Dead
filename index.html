@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#111315">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>Denver Dead — Twin Stick v8</title>
+<title>Denver Dead — Landscape v8.3</title>
 <style>
 html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overscroll-behavior:none}
 *{box-sizing:border-box}
@@ -16,7 +16,7 @@ html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-sy
 #healthbar{height:14px;background:#3a1d1d;border:1px solid #454b51;border-radius:999px;overflow:hidden}
 #healthfill{height:100%;background:#44c767;width:100%}
 #gameCanvas{width:100%;display:block;background:#000;border:1px solid #333;border-radius:12px;touch-action:none}
-.controls{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-top:44px;padding:10px 8px 4px}
+.controls{display:flex;justify-content:center;align-items:flex-end;gap:38px;margin-top:44px;padding:10px 8px 4px}
 .stickWrap,.rightControls,.aimWrap{display:flex;flex-direction:column;align-items:center}
 #stick,#aimStick{position:relative;width:122px;height:122px;border-radius:50%;border:2px solid #555;background:#17191c;touch-action:none}
 #knob,#aimKnob{position:absolute;width:50px;height:50px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:#ddd}
@@ -29,7 +29,169 @@ html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-sy
 #switchGun.ready{opacity:1}
 #restart{display:block;margin:18px auto 4px;padding:9px 14px;border-radius:8px;border:1px solid #444;background:#202428;color:#eee}
 #notice{text-align:center;min-height:20px;font-weight:800;font-size:13px;color:#f2d07a}
-@media(max-width:480px){#game{padding:7px}.hud{font-size:11px}.controls{gap:8px;margin-top:52px;padding:6px 4px 2px}#stick,#aimStick{width:112px;height:112px}#bomb,#switchGun{width:56px;height:56px}.actionCluster{margin-bottom:22px}}
+@media(max-width:480px){#game{padding:7px}.hud{font-size:11px}.controls{gap:26px;margin-top:52px;padding:6px 4px 2px}#stick,#aimStick{width:112px;height:112px}#bomb,#switchGun{width:56px;height:56px}.actionCluster{margin-bottom:22px}}
+
+@media (orientation:landscape) {
+  body {
+    margin:0;
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
+
+  #game {
+    width:100vw;
+    max-width:none;
+    padding:4px 8px 2px;
+    box-sizing:border-box;
+  }
+
+  .hud {
+    display:grid;
+    grid-template-columns:repeat(5, minmax(72px, 1fr));
+    gap:6px;
+    font-size:10px;
+    margin-bottom:4px;
+  }
+
+  .healthRow {
+    margin:2px 0 3px;
+  }
+
+  canvas {
+    display:block;
+    width:auto !important;
+    height:calc(100vh - 122px) !important;
+    max-width:72vw;
+    margin:0 auto;
+    touch-action:none;
+  }
+
+  .controls {
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:6px;
+    margin:0;
+    padding:0 7vw;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    pointer-events:none;
+  }
+
+  .stickWrap,
+  .rightControls,
+  .aimWrap,
+  .actionCluster,
+  #restart {
+    pointer-events:auto;
+  }
+
+  #stick,
+  #aimStick {
+    width:104px;
+    height:104px;
+    background:rgba(23,25,28,.72);
+  }
+
+  #knob,
+  #aimKnob {
+    width:44px;
+    height:44px;
+  }
+
+  .actionCluster {
+    margin-bottom:6px;
+    gap:6px;
+  }
+
+  #switchGun,
+  #bomb {
+    width:50px;
+    height:50px;
+    font-size:9px;
+  }
+
+  .rightControls {
+    flex-direction:row-reverse;
+    align-items:flex-end;
+    gap:10px;
+  }
+
+  .aimWrap {
+    margin:0;
+  }
+
+  #restart {
+    position:absolute;
+    left:50%;
+    bottom:8px;
+    transform:translateX(-50%);
+    margin:0;
+    z-index:4;
+  }
+
+  #notice {
+    position:absolute;
+    left:50%;
+    top:86px;
+    transform:translateX(-50%);
+    z-index:5;
+    pointer-events:none;
+    width:60vw;
+  }
+}
+
+
+@media (orientation:landscape) {
+  .controls {
+    left:0;
+    right:0;
+    bottom:max(8px, env(safe-area-inset-bottom));
+    padding-left:max(18px, env(safe-area-inset-left));
+    padding-right:max(18px, env(safe-area-inset-right));
+    justify-content:space-between;
+    gap:0;
+  }
+
+  .stickWrap {
+    align-items:center;
+    margin:0;
+  }
+
+  .rightControls {
+    flex-direction:column;
+    align-items:center;
+    gap:7px;
+    margin:0;
+  }
+
+  .actionCluster {
+    order:0;
+    margin:0 0 6px 0;
+    display:flex;
+    justify-content:center;
+    gap:7px;
+  }
+
+  .aimWrap {
+    order:1;
+    margin:0;
+  }
+
+  #stick,
+  #aimStick {
+    width:112px;
+    height:112px;
+  }
+
+  #switchGun,
+  #bomb {
+    width:52px;
+    height:52px;
+  }
+}
+
 </style>
 </head>
 <body>
