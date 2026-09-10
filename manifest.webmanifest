@@ -1,0 +1,9 @@
+{
+  "name": "Denver Dead: Aerial Survival",
+  "short_name": "Denver Dead",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "orientation": "portrait"
+}
