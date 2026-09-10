@@ -3,66 +3,375 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#101114">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Denver Dead</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;background:#111;color:#eee;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overscroll-behavior:none}
+*{box-sizing:border-box}html,body{margin:0;background:#101114;color:#eee;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overscroll-behavior:none}
 body{padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
-.wrap{max-width:760px;margin:auto}.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:8px 0}
-.card{background:#202226;border:1px solid #34373d;border-radius:12px;padding:8px;text-align:center}.small{font-size:11px;color:#aaa}.big{font-weight:700}
+.wrap{max-width:760px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.restart{padding:9px 12px;border-radius:10px;border:1px solid #555;background:#222;color:#eee}
+.health-wrap{background:#1d2024;border:1px solid #34373d;border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.health-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.health-track{height:16px;background:#3a1d1d;border-radius:999px;overflow:hidden;border:1px solid #4d4d4d}
+.health-fill{height:100%;width:100%;background:#44c767;transition:width .15s}
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:8px 0}
+.card{background:#1d2024;border:1px solid #34373d;border-radius:12px;padding:8px;text-align:center}.small{font-size:11px;color:#aaa}.big{font-weight:700}
+.progress{background:#1d2024;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:13px}
 canvas{display:block;width:100%;border:1px solid #383b40;border-radius:14px;background:#000;touch-action:none}
-.controls{display:flex;justify-content:space-between;align-items:center;gap:18px;background:#202226;border-radius:14px;padding:14px;margin-top:9px}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:18px;background:#1d2024;border-radius:14px;padding:14px;margin-top:9px}
 .stick{width:138px;height:138px;border-radius:50%;border:2px solid #444;background:#17191c;position:relative;touch-action:none;flex:0 0 auto}
 .knob{width:58px;height:58px;border-radius:50%;background:#d9d9d9;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
-.fire{width:112px;height:112px;border-radius:50%;border:0;font-weight:800;font-size:20px;background:#d5d5d5;color:#111;touch-action:none}
-.top{display:flex;justify-content:space-between;align-items:center}.restart{padding:10px 13px;border-radius:10px;border:1px solid #555;background:#222;color:#eee}
-.progress{background:#202226;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:13px}
-@media(max-width:390px){.controls{gap:8px}.stick{width:125px;height:125px}.fire{width:100px;height:100px}.hud{font-size:13px}}
+.fire{width:112px;height:112px;border-radius:50%;border:0;font-weight:800;font-size:20px;background:#c7342f;color:#fff;touch-action:none;box-shadow:0 0 0 5px rgba(199,52,47,.18)}
+@media(max-width:390px){.controls{gap:8px}.stick{width:125px;height:125px}.fire{width:100px;height:100px}.hud{font-size:12px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="top"><div><b>DENVER DEAD</b><div class="small">Aerial Zombie Survival</div></div><button class="restart" id="restart">Restart</button></div>
+<div class="top"><div><b>DENVER DEAD</b><div class="small">Survive. Upgrade. Outlast.</div></div><button class="restart" id="restart">Restart</button></div>
+
+<div class="health-wrap">
+  <div class="health-row"><span>HEALTH</span><span id="healthText">100 / 100</span></div>
+  <div class="health-track"><div class="health-fill" id="healthFill"></div></div>
+</div>
+
 <div class="hud">
-<div class="card"><div class="small">Health</div><div class="big" id="health">100</div></div>
 <div class="card"><div class="small">Weapon</div><div class="big" id="weapon">Pistol</div></div>
 <div class="card"><div class="small">Wave</div><div class="big" id="wave">1</div></div>
 <div class="card"><div class="small">Kills</div><div class="big" id="kills">0</div></div>
+<div class="card"><div class="small">Support</div><div class="big" id="supportKills">0</div></div>
 </div>
+
 <div class="progress" id="progress">20 pistol kills → Shotgun</div>
 <canvas id="game" width="720" height="500"></canvas>
+
 <div class="controls">
 <div><div class="small" style="margin-bottom:7px">MOVE</div><div class="stick" id="stick"><div class="knob" id="knob"></div></div></div>
 <button class="fire" id="fire">FIRE</button>
 </div>
 </div>
+
 <script>
 const c=document.getElementById('game'),ctx=c.getContext('2d'),W=c.width,H=c.height;
-const healthEl=document.getElementById('health'),weaponEl=document.getElementById('weapon'),waveEl=document.getElementById('wave'),killsEl=document.getElementById('kills'),progressEl=document.getElementById('progress');
+const healthText=document.getElementById('healthText'),healthFill=document.getElementById('healthFill'),
+weaponEl=document.getElementById('weapon'),waveEl=document.getElementById('wave'),killsEl=document.getElementById('kills'),
+supportKillsEl=document.getElementById('supportKills'),progressEl=document.getElementById('progress');
 const stick=document.getElementById('stick'),knob=document.getElementById('knob'),fire=document.getElementById('fire');
-let st,zombies=[],bullets=[],particles=[],last=performance.now(),lastShot=0,joyX=0,joyY=0,fireHeld=false,stickPointer=null;
+
+let st,zombies=[],bullets=[],particles=[],healthDrops=[],tracers=[],last=performance.now(),lastShot=0,joyX=0,joyY=0,fireHeld=false,stickPointer=null;
 const mapW=1800,mapH=1400;
-const roads=[{x:0,y:240,w:1800,h:150},{x:0,y:650,w:1800,h:160},{x:0,y:1060,w:1800,h:150},{x:260,y:0,w:150,h:1400},{x:760,y:0,w:160,h:1400},{x:1280,y:0,w:150,h:1400}];
-const blocks=[];for(let col=0;col<4;col++)for(let row=0;row<3;row++){const x=[40,460,970,1480][col],y=[40,440,860][row];blocks.push({x,y,w:[180,240,220,240][col],h:[150,160,150][row],label:['LoDo','Market','CBD','Civic'][col]});}
-const weapons={pistol:{name:'Pistol',damage:1,cooldown:260,speed:650,spread:0,pellets:1},shotgun:{name:'Shotgun',damage:2,cooldown:520,speed:600,spread:.24,pellets:6},rifle:{name:'Assault Rifle',damage:3,cooldown:100,speed:780,spread:.035,pellets:1}};
+
+const roads=[
+{x:0,y:210,w:1800,h:180},{x:0,y:620,w:1800,h:180},{x:0,y:1030,w:1800,h:180},
+{x:220,y:0,w:180,h:1400},{x:730,y:0,w:180,h:1400},{x:1260,y:0,w:180,h:1400}
+];
+
+const blocks=[];
+const cols=[40,450,960,1490], rows=[35,430,850];
+for(let col=0;col<4;col++)for(let row=0;row<3;row++){
+ const x=cols[col],y=rows[row];
+ blocks.push({x,y,w:[150,240,250,250][col],h:[140,155,145][row],label:['LoDo','Market','CBD','Civic'][col]});
+}
+
+// Abandoned vehicles as obstacles
+const cars=[
+ {x:560,y:285,w:72,h:34,a:.12},{x:1060,y:695,w:78,h:36,a:-.25},{x:330,y:1110,w:74,h:34,a:.08},
+ {x:820,y:310,w:70,h:32,a:1.5},{x:1350,y:745,w:82,h:36,a:-1.45},{x:780,y:1120,w:70,h:33,a:1.56},
+ {x:1150,y:1110,w:76,h:34,a:.1},{x:300,y:720,w:68,h:32,a:-1.5}
+];
+
+// street fixtures, nonblocking decorative
+const lamps=[{x:430,y:230},{x:690,y:380},{x:940,y:630},{x:1190,y:790},{x:1460,y:1040},{x:710,y:1040},{x:1230,y:390},{x:410,y:1010}];
+const barrels=[{x:520,y:650},{x:1020,y:760},{x:1510,y:640},{x:365,y:1045},{x:890,y:1080}];
+
+const sniperSpots=[
+ {x:520,y:520,name:'SNIPER 1'},
+ {x:1510,y:920,name:'SNIPER 2'}
+];
+
+const weapons={
+ pistol:{name:'Pistol',damage:1,cooldown:260,speed:650,spread:0,pellets:1},
+ shotgun:{name:'Shotgun',damage:2,cooldown:520,speed:600,spread:.24,pellets:6},
+ rifle:{name:'Assault Rifle',damage:3,cooldown:100,speed:780,spread:.035,pellets:1}
+};
 const wp=()=>weapons[st.weapon];
-function reset(){st={x:850,y:730,angle:-Math.PI/2,health:100,wave:1,kills:0,weapon:'pistol',pistolKills:0,shotgunKills:0,gameOver:false};zombies=[];bullets=[];particles=[];joyX=joyY=0;centerKnob();spawnWave();hud()}
-function spawnWave(){const n=6+st.wave*3;for(let i=0;i<n;i++){let x,y;do{x=80+Math.random()*(mapW-160);y=80+Math.random()*(mapH-160)}while(Math.hypot(x-st.x,y-st.y)<350);const hp=3+Math.floor(st.wave/4);zombies.push({x,y,hp,maxHp:hp,speed:55+Math.random()*25+st.wave*2,attack:0,dead:false,r:16})}}
-function hud(){healthEl.textContent=Math.max(0,Math.ceil(st.health));weaponEl.textContent=wp().name;waveEl.textContent=st.wave;killsEl.textContent=st.kills;progressEl.textContent=st.weapon==='pistol'?`${Math.max(0,20-st.pistolKills)} pistol kills → Shotgun`:st.weapon==='shotgun'?`${Math.max(0,20-st.shotgunKills)} shotgun kills → Assault Rifle`:'MAX WEAPON — Assault Rifle'}
-function upgrade(){if(st.weapon==='pistol'&&st.pistolKills>=20)st.weapon='shotgun';else if(st.weapon==='shotgun'&&st.shotgunKills>=20)st.weapon='rifle';hud()}
-function shoot(){if(st.gameOver)return;const now=performance.now(),w=wp();if(now-lastShot<w.cooldown)return;lastShot=now;for(let i=0;i<w.pellets;i++){const off=w.pellets===1?0:(Math.random()-.5)*w.spread,a=st.angle+off;bullets.push({x:st.x+Math.cos(a)*24,y:st.y+Math.sin(a)*24,vx:Math.cos(a)*w.speed,vy:Math.sin(a)*w.speed,life:1.15,damage:w.damage,weapon:st.weapon})}}
-function rectHit(x,y,r){return blocks.some(b=>x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)}
-function kill(type){st.kills++;if(type==='pistol')st.pistolKills++;else if(type==='shotgun')st.shotgunKills++;upgrade()}
-function step(dt){if(!st.gameOver){const m=Math.hypot(joyX,joyY);if(m>.08){const dx=joyX/m,dy=joyY/m;st.angle=Math.atan2(dy,dx);const sp=150*Math.min(1,m);const nx=st.x+dx*sp*dt,ny=st.y+dy*sp*dt;if(!rectHit(nx,st.y,14))st.x=Math.max(20,Math.min(mapW-20,nx));if(!rectHit(st.x,ny,14))st.y=Math.max(20,Math.min(mapH-20,ny))}if(fireHeld)shoot();for(const z of zombies){if(z.dead)continue;const dx=st.x-z.x,dy=st.y-z.y,d=Math.hypot(dx,dy);if(d>25){z.x+=dx/d*z.speed*dt;z.y+=dy/d*z.speed*dt}else{z.attack-=dt;if(z.attack<=0){st.health-=8;z.attack=.7;if(st.health<=0){st.health=0;st.gameOver=true}}}}}
-for(const b of bullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;for(const z of zombies){if(z.dead)continue;if(Math.hypot(b.x-z.x,b.y-z.y)<z.r+4){z.hp-=b.damage;b.life=0;for(let i=0;i<7;i++)particles.push({x:z.x,y:z.y,vx:(Math.random()-.5)*130,vy:(Math.random()-.5)*130,life:.38});if(z.hp<=0){z.dead=true;kill(b.weapon)}break}}}bullets=bullets.filter(b=>b.life>0&&b.x>0&&b.x<mapW&&b.y>0&&b.y<mapH);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}particles=particles.filter(p=>p.life>0);if(!st.gameOver&&zombies.every(z=>z.dead)){st.wave++;spawnWave()}hud()}
-function draw(){const camX=Math.max(W/2,Math.min(mapW-W/2,st.x)),camY=Math.max(H/2,Math.min(mapH-H/2,st.y)),sx=x=>x-camX+W/2,sy=y=>y-camY+H/2;ctx.fillStyle='#777b74';ctx.fillRect(0,0,W,H);ctx.fillStyle='#34373a';roads.forEach(r=>ctx.fillRect(sx(r.x),sy(r.y),r.w,r.h));ctx.strokeStyle='#d7c56f';ctx.lineWidth=3;ctx.setLineDash([18,16]);roads.forEach(r=>{ctx.beginPath();if(r.w>r.h){ctx.moveTo(sx(r.x),sy(r.y+r.h/2));ctx.lineTo(sx(r.x+r.w),sy(r.y+r.h/2))}else{ctx.moveTo(sx(r.x+r.w/2),sy(r.y));ctx.lineTo(sx(r.x+r.w/2),sy(r.y+r.h))}ctx.stroke()});ctx.setLineDash([]);for(const b of blocks){const x=sx(b.x),y=sy(b.y);ctx.fillStyle='#555c62';ctx.fillRect(x,y,b.w,b.h);ctx.fillStyle='#6e767d';ctx.fillRect(x+8,y+8,b.w-16,b.h-16);ctx.fillStyle='#ddd';ctx.font='11px sans-serif';ctx.fillText(b.label,x+10,y+16)}for(const z of zombies){if(z.dead)continue;const x=sx(z.x),y=sy(z.y);ctx.fillStyle='#485448';ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.fill();ctx.fillStyle='#858a74';ctx.beginPath();ctx.arc(x,y-12,8,0,Math.PI*2);ctx.fill();const pct=Math.max(0,z.hp/z.maxHp);ctx.fillStyle='#111';ctx.fillRect(x-15,y-27,30,4);ctx.fillStyle='#bbb';ctx.fillRect(x-15,y-27,30*pct,4)}for(const b of bullets){ctx.fillStyle='#f3dfa1';ctx.beginPath();ctx.arc(sx(b.x),sy(b.y),3,0,Math.PI*2);ctx.fill()}for(const p of particles){ctx.fillStyle=`rgba(110,20,18,${Math.max(0,p.life/.38)})`;ctx.beginPath();ctx.arc(sx(p.x),sy(p.y),3,0,Math.PI*2);ctx.fill()}const px=sx(st.x),py=sy(st.y);ctx.fillStyle='#2d4054';ctx.beginPath();ctx.arc(px,py,14,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#202020';ctx.lineWidth=st.weapon==='shotgun'?7:5;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(st.angle)*(st.weapon==='rifle'?32:27),py+Math.sin(st.angle)*(st.weapon==='rifle'?32:27));ctx.stroke();if(st.gameOver){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 38px sans-serif';ctx.fillText('YOU DIED',W/2,H/2);ctx.font='18px sans-serif';ctx.fillText(`${st.kills} zombies killed`,W/2,H/2+32)}}
+
+function buildingHit(x,y,r){
+ return blocks.some(b=>x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h);
+}
+function carHit(x,y,r){
+ return cars.some(car=>Math.hypot(x-car.x,y-car.y) < r + Math.max(car.w,car.h)*.42);
+}
+function obstacleHit(x,y,r){ return buildingHit(x,y,r)||carHit(x,y,r); }
+
+function randomWalkable(minDist=0){
+ let x,y,tries=0;
+ do{
+   x=35+Math.random()*(mapW-70); y=35+Math.random()*(mapH-70); tries++;
+ }while((obstacleHit(x,y,18)||Math.hypot(x-st.x,y-st.y)<minDist) && tries<700);
+ return {x,y};
+}
+function reset(){
+ st={x:850,y:730,angle:-Math.PI/2,health:100,wave:1,kills:0,supportKills:0,weapon:'pistol',
+ pistolKills:0,shotgunKills:0,gameOver:false,aliveTime:0,nextHealthDrop:20,nextSniper1:10,nextSniper2:10};
+ zombies=[];bullets=[];particles=[];healthDrops=[];tracers=[];joyX=joyY=0;centerKnob();spawnWave();hud();
+}
+function spawnWave(){
+ const n=10+(st.wave-1)*5;
+ for(let i=0;i<n;i++){
+   const p=randomWalkable(320),hp=3+Math.floor(st.wave/5);
+   zombies.push({x:p.x,y:p.y,hp,maxHp:hp,speed:50+Math.random()*20+st.wave*1.6,attack:0,dead:false,r:16});
+ }
+}
+function spawnHealthDrop(){
+ const p=randomWalkable(120);
+ healthDrops.push({x:p.x,y:p.y,r:13,pulse:Math.random()*Math.PI*2});
+}
+function hud(){
+ healthText.textContent=`${Math.max(0,Math.ceil(st.health))} / 100`;
+ healthFill.style.width=`${Math.max(0,st.health)}%`;
+ weaponEl.textContent=wp().name;waveEl.textContent=st.wave;killsEl.textContent=st.kills;supportKillsEl.textContent=st.supportKills;
+ progressEl.textContent=st.weapon==='pistol'?`${Math.max(0,20-st.pistolKills)} pistol kills → Shotgun`
+ :st.weapon==='shotgun'?`${Math.max(0,20-st.shotgunKills)} shotgun kills → Assault Rifle`
+ :'MAX WEAPON — Assault Rifle';
+}
+function upgrade(){
+ if(st.weapon==='pistol'&&st.pistolKills>=20)st.weapon='shotgun';
+ else if(st.weapon==='shotgun'&&st.shotgunKills>=20)st.weapon='rifle';
+ hud();
+}
+function shoot(){
+ if(st.gameOver)return; const now=performance.now(),w=wp(); if(now-lastShot<w.cooldown)return; lastShot=now;
+ for(let i=0;i<w.pellets;i++){
+   const off=w.pellets===1?0:(Math.random()-.5)*w.spread,a=st.angle+off;
+   bullets.push({x:st.x+Math.cos(a)*24,y:st.y+Math.sin(a)*24,vx:Math.cos(a)*w.speed,vy:Math.sin(a)*w.speed,life:1.15,damage:w.damage,weapon:st.weapon});
+ }
+}
+function playerKill(type){
+ st.kills++;
+ if(type==='pistol')st.pistolKills++;
+ else if(type==='shotgun')st.shotgunKills++;
+ upgrade();
+}
+function snipe(which){
+ const living=zombies.filter(z=>!z.dead);
+ if(!living.length)return;
+ const z=living[Math.floor(Math.random()*living.length)];
+ z.dead=true; st.supportKills++;
+ const s=sniperSpots[which];
+ tracers.push({x1:s.x,y1:s.y,x2:z.x,y2:z.y,life:.18});
+ for(let i=0;i<12;i++)particles.push({x:z.x,y:z.y,vx:(Math.random()-.5)*170,vy:(Math.random()-.5)*170,life:.4});
+}
+
+function moveZombie(z,dx,dy,dist,dt){
+ if(dist<=0)return;
+ const sp=z.speed*dt;
+ const primaryX=z.x+(dx/dist)*sp, primaryY=z.y+(dy/dist)*sp;
+ if(!obstacleHit(primaryX,z.y,z.r)) z.x=Math.max(20,Math.min(mapW-20,primaryX));
+ else{
+   const alt1=z.y+Math.sign(dy||1)*sp, alt2=z.y-Math.sign(dy||1)*sp;
+   if(!obstacleHit(z.x,alt1,z.r)) z.y=alt1;
+   else if(!obstacleHit(z.x,alt2,z.r)) z.y=alt2;
+ }
+ if(!obstacleHit(z.x,primaryY,z.r)) z.y=Math.max(20,Math.min(mapH-20,primaryY));
+ else{
+   const alt1=z.x+Math.sign(dx||1)*sp, alt2=z.x-Math.sign(dx||1)*sp;
+   if(!obstacleHit(alt1,z.y,z.r)) z.x=alt1;
+   else if(!obstacleHit(alt2,z.y,z.r)) z.x=alt2;
+ }
+}
+
+function step(dt){
+ if(!st.gameOver){
+   st.aliveTime+=dt;
+   if(st.aliveTime>=st.nextHealthDrop){spawnHealthDrop();st.nextHealthDrop+=20;}
+
+   if(st.wave>=5 && st.aliveTime>=st.nextSniper1){snipe(0);st.nextSniper1+=10;}
+   if(st.wave>=15 && st.aliveTime>=st.nextSniper2){snipe(1);st.nextSniper2+=10;}
+
+   const m=Math.hypot(joyX,joyY);
+   if(m>.08){
+     const dx=joyX/m,dy=joyY/m;st.angle=Math.atan2(dy,dx);const sp=150*Math.min(1,m);
+     const nx=st.x+dx*sp*dt,ny=st.y+dy*sp*dt;
+     if(!obstacleHit(nx,st.y,14))st.x=Math.max(20,Math.min(mapW-20,nx));
+     if(!obstacleHit(st.x,ny,14))st.y=Math.max(20,Math.min(mapH-20,ny));
+   }
+   if(fireHeld)shoot();
+
+   for(const z of zombies){
+     if(z.dead)continue;
+     const dx=st.x-z.x,dy=st.y-z.y,d=Math.hypot(dx,dy);
+     if(d>27) moveZombie(z,dx,dy,d,dt);
+     else{
+       z.attack-=dt;
+       if(z.attack<=0){
+         st.health-=5; z.attack=.72;
+         if(st.health<=0){st.health=0;st.gameOver=true;}
+       }
+     }
+   }
+
+   for(let i=healthDrops.length-1;i>=0;i--){
+     const h=healthDrops[i];
+     if(Math.hypot(st.x-h.x,st.y-h.y)<28){
+       st.health=Math.min(100,st.health+25);
+       healthDrops.splice(i,1);
+     }
+   }
+ }
+
+ for(const b of bullets){
+   b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+   if(obstacleHit(b.x,b.y,2)){b.life=0;continue;}
+   for(const z of zombies){
+     if(z.dead)continue;
+     if(Math.hypot(b.x-z.x,b.y-z.y)<z.r+4){
+       z.hp-=b.damage;b.life=0;
+       for(let i=0;i<7;i++)particles.push({x:z.x,y:z.y,vx:(Math.random()-.5)*130,vy:(Math.random()-.5)*130,life:.38});
+       if(z.hp<=0){z.dead=true;playerKill(b.weapon)} break;
+     }
+   }
+ }
+ bullets=bullets.filter(b=>b.life>0&&b.x>0&&b.x<mapW&&b.y>0&&b.y<mapH);
+ for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}
+ particles=particles.filter(p=>p.life>0);
+ for(const t of tracers)t.life-=dt;
+ tracers=tracers.filter(t=>t.life>0);
+
+ if(!st.gameOver&&zombies.every(z=>z.dead)){st.wave++;spawnWave()}
+ hud();
+}
+
+function drawRoads(sx,sy){
+ ctx.fillStyle='#26292e';
+ roads.forEach(r=>ctx.fillRect(sx(r.x),sy(r.y),r.w,r.h));
+
+ // sidewalks along roads
+ ctx.fillStyle='#77736c';
+ roads.forEach(r=>{
+   if(r.w>r.h){
+     ctx.fillRect(sx(r.x),sy(r.y-16),r.w,16);
+     ctx.fillRect(sx(r.x),sy(r.y+r.h),r.w,16);
+   }else{
+     ctx.fillRect(sx(r.x-16),sy(r.y),16,r.h);
+     ctx.fillRect(sx(r.x+r.w),sy(r.y),16,r.h);
+   }
+ });
+
+ // lane lines
+ ctx.lineWidth=3;ctx.setLineDash([22,18]);ctx.strokeStyle='#dedede';
+ roads.forEach(r=>{
+   if(r.w>r.h){
+     [r.y+r.h*.33,r.y+r.h*.66].forEach(y=>{ctx.beginPath();ctx.moveTo(sx(r.x),sy(y));ctx.lineTo(sx(r.x+r.w),sy(y));ctx.stroke()})
+   }else{
+     [r.x+r.w*.33,r.x+r.w*.66].forEach(x=>{ctx.beginPath();ctx.moveTo(sx(x),sy(r.y));ctx.lineTo(sx(x),sy(r.y+r.h));ctx.stroke()})
+   }
+ });
+ ctx.setLineDash([]);
+
+ // double yellow centerlines
+ ctx.strokeStyle='#d9b933';ctx.lineWidth=3;
+ roads.forEach(r=>{
+   if(r.w>r.h){
+     [-4,4].forEach(o=>{ctx.beginPath();ctx.moveTo(sx(r.x),sy(r.y+r.h/2+o));ctx.lineTo(sx(r.x+r.w),sy(r.y+r.h/2+o));ctx.stroke()})
+   }else{
+     [-4,4].forEach(o=>{ctx.beginPath();ctx.moveTo(sx(r.x+r.w/2+o),sy(r.y));ctx.lineTo(sx(r.x+r.w/2+o),sy(r.y+r.h));ctx.stroke()})
+   }
+ });
+
+ // crosswalks at main intersections
+ ctx.strokeStyle='#d9d9d9';ctx.lineWidth=6;
+ [[310,300],[820,710],[1350,1120],[820,300],[310,710],[1350,710]].forEach(([x,y])=>{
+   for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(sx(x-40),sy(y+i*10));ctx.lineTo(sx(x+40),sy(y+i*10));ctx.stroke()}
+ });
+}
+
+function draw(){
+ const camX=Math.max(W/2,Math.min(mapW-W/2,st.x)),camY=Math.max(H/2,Math.min(mapH-H/2,st.y)),sx=x=>x-camX+W/2,sy=y=>y-camY+H/2;
+ ctx.fillStyle='#4a4f4c';ctx.fillRect(0,0,W,H);
+ drawRoads(sx,sy);
+
+ // buildings
+ for(const b of blocks){
+   const x=sx(b.x),y=sy(b.y);
+   ctx.fillStyle='#2a2d31';ctx.fillRect(x+7,y+9,b.w,b.h);
+   ctx.fillStyle='#4a4f55';ctx.fillRect(x,y,b.w,b.h);
+   ctx.fillStyle='#5a6067';ctx.fillRect(x+7,y+7,b.w-14,b.h-14);
+   ctx.fillStyle='rgba(240,210,120,.15)';
+   for(let xx=x+15;xx<x+b.w-10;xx+=27)for(let yy=y+20;yy<y+b.h-10;yy+=24)ctx.fillRect(xx,yy,10,7);
+   ctx.fillStyle='#d7d7d7';ctx.font='11px sans-serif';ctx.fillText(b.label,x+10,y+16);
+ }
+
+ // street lamps glow
+ for(const l of lamps){
+   const x=sx(l.x),y=sy(l.y);
+   const g=ctx.createRadialGradient(x,y,0,x,y,30);g.addColorStop(0,'rgba(255,210,110,.32)');g.addColorStop(1,'rgba(255,210,110,0)');
+   ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,30,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#222';ctx.fillRect(x-2,y-10,4,18);ctx.fillStyle='#ffd56f';ctx.beginPath();ctx.arc(x,y-11,4,0,Math.PI*2);ctx.fill();
+ }
+
+ // vehicles
+ for(const car of cars){
+   const x=sx(car.x),y=sy(car.y);ctx.save();ctx.translate(x,y);ctx.rotate(car.a);
+   ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(-car.w/2+4,-car.h/2+5,car.w,car.h);
+   ctx.fillStyle='#5d6268';ctx.fillRect(-car.w/2,-car.h/2,car.w,car.h);
+   ctx.fillStyle='#2b3036';ctx.fillRect(-car.w*.22,-car.h*.36,car.w*.44,car.h*.72);
+   ctx.fillStyle='#151719';ctx.fillRect(-car.w*.38,-car.h*.47,car.w*.15,car.h*.94);ctx.fillRect(car.w*.23,-car.h*.47,car.w*.15,car.h*.94);
+   ctx.restore();
+ }
+
+ // barrels / debris
+ for(const b of barrels){const x=sx(b.x),y=sy(b.y);ctx.fillStyle='#c56727';ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#eee';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-6,y);ctx.lineTo(x+6,y);ctx.stroke()}
+
+ // health drops
+ for(const h of healthDrops){
+   h.pulse+=.06; const x=sx(h.x),y=sy(h.y),r=12+Math.sin(h.pulse)*2;
+   ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.arc(x,y+4,r+5,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#f2f2f2';ctx.fillRect(x-r,y-r,r*2,r*2);
+   ctx.fillStyle='#d52b2b';ctx.fillRect(x-4,y-r+3,8,r*2-6);ctx.fillRect(x-r+3,y-4,r*2-6,8);
+ }
+
+ // snipers
+ if(st.wave>=5){
+   sniperSpots.slice(0,st.wave>=15?2:1).forEach((s,idx)=>{
+     const x=sx(s.x),y=sy(s.y);ctx.fillStyle='#1b1b1b';ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();
+     ctx.strokeStyle='#111';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+16,y-4);ctx.stroke();
+     ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='9px sans-serif';ctx.fillText(`S${idx+1}`,x-6,y-10);
+   });
+ }
+
+ // zombies
+ for(const z of zombies){
+   if(z.dead)continue; const x=sx(z.x),y=sy(z.y);
+   ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(x,y+11,14,6,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#4b5447';ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#818575';ctx.beginPath();ctx.arc(x,y-12,8,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle='#2e342d';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-7,y+5);ctx.lineTo(x-13,y+18);ctx.moveTo(x+7,y+5);ctx.lineTo(x+13,y+18);ctx.stroke();
+   const pct=Math.max(0,z.hp/z.maxHp);ctx.fillStyle='#111';ctx.fillRect(x-15,y-28,30,4);ctx.fillStyle='#b9b9b9';ctx.fillRect(x-15,y-28,30*pct,4);
+ }
+
+ for(const t of tracers){ctx.strokeStyle=`rgba(255,240,180,${Math.min(1,t.life/.18)})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx(t.x1),sy(t.y1));ctx.lineTo(sx(t.x2),sy(t.y2));ctx.stroke()}
+ for(const b of bullets){ctx.fillStyle='#f3dfa1';ctx.beginPath();ctx.arc(sx(b.x),sy(b.y),3,0,Math.PI*2);ctx.fill()}
+ for(const p of particles){ctx.fillStyle=`rgba(110,20,18,${Math.max(0,p.life/.38)})`;ctx.beginPath();ctx.arc(sx(p.x),sy(p.y),3,0,Math.PI*2);ctx.fill()}
+
+ const px=sx(st.x),py=sy(st.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(px,py+11,14,6,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#284d2e';ctx.beginPath();ctx.arc(px,py,14,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#1a1a1a';ctx.lineWidth=st.weapon==='shotgun'?7:5;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(st.angle)*(st.weapon==='rifle'?32:27),py+Math.sin(st.angle)*(st.weapon==='rifle'?32:27));ctx.stroke();
+
+ if(st.gameOver){ctx.fillStyle='rgba(0,0,0,.68)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 38px sans-serif';ctx.fillText('YOU DIED',W/2,H/2);ctx.font='18px sans-serif';ctx.fillText(`${st.kills} player kills • ${st.supportKills} support kills`,W/2,H/2+32)}
+}
+
 function loop(now){const dt=Math.min(.035,(now-last)/1000);last=now;step(dt);draw();requestAnimationFrame(loop)}
 function centerKnob(){knob.style.transform='translate(-50%,-50%)'}
 function updateStick(e){const r=stick.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const radius=r.width*.32,d=Math.hypot(dx,dy);if(d>radius){dx=dx/d*radius;dy=dy/d*radius}joyX=dx/radius;joyY=dy/radius;knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`}
-stick.addEventListener('pointerdown',e=>{e.preventDefault();stickPointer=e.pointerId;stick.setPointerCapture?.(e.pointerId);updateStick(e)});stick.addEventListener('pointermove',e=>{if(e.pointerId===stickPointer)updateStick(e)});const endStick=e=>{if(stickPointer===null||e.pointerId===stickPointer){stickPointer=null;joyX=joyY=0;centerKnob()}};stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);
-fire.addEventListener('pointerdown',e=>{e.preventDefault();fireHeld=true;shoot()});['pointerup','pointercancel','pointerleave'].forEach(t=>fire.addEventListener(t,e=>{e.preventDefault();fireHeld=false}));
+stick.addEventListener('pointerdown',e=>{e.preventDefault();stickPointer=e.pointerId;stick.setPointerCapture?.(e.pointerId);updateStick(e)});
+stick.addEventListener('pointermove',e=>{if(e.pointerId===stickPointer)updateStick(e)});
+const endStick=e=>{if(stickPointer===null||e.pointerId===stickPointer){stickPointer=null;joyX=joyY=0;centerKnob()}};
+stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);
+fire.addEventListener('pointerdown',e=>{e.preventDefault();fireHeld=true;shoot()});
+['pointerup','pointercancel','pointerleave'].forEach(t=>fire.addEventListener(t,e=>{e.preventDefault();fireHeld=false}));
 document.getElementById('restart').addEventListener('click',reset);
+
 reset();requestAnimationFrame(loop);
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
