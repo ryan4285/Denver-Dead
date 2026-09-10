@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#111315">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>Denver Dead — Support & Bombs</title>
+<title>Denver Dead — Twin Stick</title>
 <style>
 html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overscroll-behavior:none}
 *{box-sizing:border-box}
@@ -16,17 +16,20 @@ html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-sy
 #healthbar{height:14px;background:#3a1d1d;border:1px solid #454b51;border-radius:999px;overflow:hidden}
 #healthfill{height:100%;background:#44c767;width:100%}
 #gameCanvas{width:100%;display:block;background:#000;border:1px solid #333;border-radius:12px;touch-action:none}
-.controls{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:10px}
-#stick{position:relative;width:126px;height:126px;border-radius:50%;border:2px solid #555;background:#17191c;touch-action:none}
-#knob{position:absolute;width:52px;height:52px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:#ddd}
-.right{display:flex;align-items:center;gap:10px}
+.controls{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-top:18px;padding:8px 4px 2px}
+.stickWrap,.aimWrap{display:flex;flex-direction:column;align-items:center;min-width:0}
+#stick,#aimStick{position:relative;width:122px;height:122px;border-radius:50%;border:2px solid #555;background:#17191c;touch-action:none}
+#knob,#aimKnob{position:absolute;width:50px;height:50px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:#ddd}
+.rightControls{display:flex;flex-direction:column;align-items:center;gap:7px}
+.actionCluster{display:flex;align-items:center;gap:7px}
 .round{border:0;border-radius:50%;font-weight:800;color:#fff;touch-action:none}
-#fire{width:102px;height:102px;background:#c7342f;font-size:18px}
-#bomb{width:72px;height:72px;background:#79571b;font-size:12px;opacity:.45}
+#bomb{width:64px;height:64px;background:#79571b;font-size:11px;opacity:.45}
 #bomb.ready{background:#d68b18;opacity:1}
-#restart{margin-top:8px;padding:9px 14px;border-radius:8px;border:1px solid #444;background:#202428;color:#eee}
+#switchGun{width:64px;height:64px;background:#2d5068;font-size:10px;opacity:.45}
+#switchGun.ready{opacity:1}
+#restart{display:block;margin:10px auto 0;padding:9px 14px;border-radius:8px;border:1px solid #444;background:#202428;color:#eee}
 #notice{text-align:center;min-height:20px;font-weight:800;font-size:13px;color:#f2d07a}
-@media(max-width:480px){#game{padding:7px}.hud{font-size:11px}.controls{gap:8px}#stick{width:116px;height:116px}#fire{width:92px;height:92px}.right{gap:7px}#bomb{width:66px;height:66px}}
+@media(max-width:480px){#game{padding:7px}.hud{font-size:11px}.controls{gap:6px;padding:6px 0 0}#stick,#aimStick{width:108px;height:108px}#bomb,#switchGun{width:58px;height:58px}.actionCluster{gap:5px}}
 </style>
 </head>
 <body>
@@ -44,18 +47,22 @@ html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-sy
   <div id="notice"></div>
   <canvas id="gameCanvas" width="720" height="500"></canvas>
   <div class="controls">
-    <div>
-      <div class="muted" style="margin-bottom:4px">MOVE</div>
+    <div class="stickWrap">
+      <div class="muted" style="margin-bottom:4px;text-align:center">MOVE</div>
       <div id="stick"><div id="knob"></div></div>
     </div>
-    <div class="right">
-      <button id="bomb" class="round" type="button">BOMB</button>
-      <div>
-        <button id="fire" class="round" type="button">FIRE</button><br>
-        <button id="restart" type="button">Restart</button>
+    <div class="rightControls">
+      <div class="actionCluster">
+        <button id="switchGun" class="round" type="button">SWITCH<br>GUN</button>
+        <button id="bomb" class="round" type="button">BOMB</button>
+      </div>
+      <div class="aimWrap">
+        <div class="muted" style="margin-bottom:4px;text-align:center">AIM</div>
+        <div id="aimStick"><div id="aimKnob"></div></div>
       </div>
     </div>
   </div>
+  <button id="restart" type="button">Restart</button>
 </div>
 <script>
 (()=>{
@@ -66,7 +73,7 @@ for(let a=0;a<4;a++)for(let b=0;b<3;b++)blocks.push({x:cols[a],y:rows[b],w:[150,
 const cars=[{x:560,y:285,w:72,h:34},{x:1060,y:695,w:78,h:36},{x:330,y:1110,w:74,h:34},{x:820,y:310,w:70,h:32},{x:1350,y:745,w:82,h:36},{x:780,y:1120,w:70,h:33},{x:1150,y:1110,w:76,h:34},{x:300,y:720,w:68,h:32}];
 const supportSpots=[{x:520,y:520},{x:1510,y:920}];
 const weapons={pistol:{name:'Pistol',damage:1,cd:260,pellets:1,spread:0},shotgun:{name:'Shotgun',damage:2,cd:520,pellets:6,spread:.30},rifle:{name:'Assault Rifle',damage:3,cd:105,pellets:1,spread:.04}};
-let s,z=[],bul=[],drops=[],bombDrops=[],blood=[],tr=[],rings=[],joyX=0,joyY=0,held=false,pid=null,last=performance.now(),lastShot=0,raf,noticeUntil=0;
+let s,z=[],bul=[],drops=[],bombDrops=[],blood=[],tr=[],rings=[],joyX=0,joyY=0,aimX=1,aimY=0,pid=null,aimPid=null,last=performance.now(),lastShot=0,raf,noticeUntil=0;
 const $=id=>document.getElementById(id);
 
 function blocked(px,py,r){
@@ -90,7 +97,7 @@ function say(t,secs=2.4){$('notice').textContent=t;noticeUntil=s.time+secs}
 function reset(){
   s={x:850,y:730,a:-1.57,hp:100,wave:1,kills:0,support:0,gun:'pistol',pk:0,sk:0,time:0,nextHealth:30,nextBomb:50,bomb:false,over:false,
      s1mode:'none',s2mode:'none',nextS1:null,nextS2:null};
-  z=[];bul=[];drops=[];bombDrops=[];blood=[];tr=[];rings=[];joyX=joyY=0;held=false;spawnWave();hud();say('SURVIVE DENVER',1.6);
+  z=[];bul=[];drops=[];bombDrops=[];blood=[];tr=[];rings=[];joyX=joyY=0;aimX=1;aimY=0;spawnWave();hud();say('SURVIVE DENVER',1.6);
 }
 function supportMode(slot){
   if(slot===1){
@@ -121,6 +128,9 @@ function hud(){
   $('wave').textContent=s.wave;$('kills').textContent=s.kills;$('support').textContent=s.support;$('weapon').textContent=weapons[s.gun].name;
   $('healthText').textContent=Math.max(0,s.hp)+' / 100';$('healthfill').style.width=Math.max(0,s.hp)+'%';
   $('bombHud').textContent=s.bomb?'READY':'EMPTY';$('bomb').classList.toggle('ready',s.bomb);
+  const unlocked=s.pk>=20||s.sk>=20||s.gun!=='pistol';
+  $('switchGun').classList.toggle('ready',unlocked);
+  $('switchGun').disabled=!unlocked;
   $('progress').textContent=s.gun==='pistol'?(20-s.pk)+' pistol kills → Shotgun':s.gun==='shotgun'?(20-s.sk)+' shotgun kills → Assault Rifle':'MAX WEAPON — Assault Rifle';
 }
 function playerKill(g){
@@ -155,6 +165,17 @@ function mgBurst(slot){
     if(q.hp<=0){q.dead=true;s.support++}
   }
 }
+
+function switchGun(){
+  const unlocked=['pistol'];
+  if(s.pk>=20 || s.gun==='shotgun' || s.gun==='rifle' || s.sk>=20) unlocked.push('shotgun');
+  if(s.sk>=20 || s.gun==='rifle') unlocked.push('rifle');
+  if(unlocked.length<=1)return;
+  let i=unlocked.indexOf(s.gun);
+  s.gun=unlocked[(i+1)%unlocked.length];
+  say(weapons[s.gun].name.toUpperCase(),1.0);
+  hud();
+}
 function useBomb(){
   if(s.over||!s.bomb)return;
   s.bomb=false;
@@ -181,12 +202,14 @@ function update(dt){
 
     let m=Math.hypot(joyX,joyY);
     if(m>.08){
-      let dx=joyX/m,dy=joyY/m,sp=155*Math.min(1,m);s.a=Math.atan2(dy,dx);
+      let dx=joyX/m,dy=joyY/m,sp=155*Math.min(1,m);
       let nx=s.x+dx*sp*dt,ny=s.y+dy*sp*dt;
       if(!blocked(nx,s.y,14))s.x=Math.max(20,Math.min(mapW-20,nx));
       if(!blocked(s.x,ny,14))s.y=Math.max(20,Math.min(mapH-20,ny));
     }
-    if(held)shoot();
+    const am=Math.hypot(aimX,aimY);
+    if(am>.08)s.a=Math.atan2(aimY,aimX);
+    shoot();
 
     for(const q of z){
       if(q.dead)continue;
@@ -251,6 +274,7 @@ function endStick(e){if(pid===null||e.pointerId===pid){pid=null;joyX=joyY=0;knob
 stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);
 $('fire').addEventListener('pointerdown',e=>{e.preventDefault();held=true;shoot()});
 ['pointerup','pointercancel','pointerleave'].forEach(k=>$('fire').addEventListener(k,e=>{e.preventDefault();held=false}));
+$('switchGun').addEventListener('click',switchGun);
 $('bomb').addEventListener('click',useBomb);
 $('restart').addEventListener('click',reset);
 reset();raf=requestAnimationFrame(loop);
