@@ -1,7 +1,7 @@
 {
   "name": "Denver Dead",
   "short_name": "Denver Dead",
-  "start_url": "./index.html?v=32",
+  "start_url": "./index.html?v=33",
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#0b0d0f",
