@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#111315">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>Denver Dead — Twin Stick</title>
+<title>Denver Dead — Twin Stick Fixed</title>
 <style>
 html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overscroll-behavior:none}
 *{box-sizing:border-box}
@@ -271,9 +271,39 @@ function moveStick(e){let r=stick.getBoundingClientRect(),dx=e.clientX-r.left-r.
 stick.addEventListener('pointerdown',e=>{e.preventDefault();pid=e.pointerId;stick.setPointerCapture?.(pid);moveStick(e)});
 stick.addEventListener('pointermove',e=>{if(e.pointerId===pid)moveStick(e)});
 function endStick(e){if(pid===null||e.pointerId===pid){pid=null;joyX=joyY=0;knob.style.transform='translate(-50%,-50%)'}}
+
 stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);
-$('fire').addEventListener('pointerdown',e=>{e.preventDefault();held=true;shoot()});
-['pointerup','pointercancel','pointerleave'].forEach(k=>$('fire').addEventListener(k,e=>{e.preventDefault();held=false}));
+
+const aimStick=$('aimStick'),aimKnob=$('aimKnob');
+function moveAim(e){
+  let r=aimStick.getBoundingClientRect(),
+      dx=e.clientX-r.left-r.width/2,
+      dy=e.clientY-r.top-r.height/2,
+      lim=r.width*.32,
+      d=Math.hypot(dx,dy);
+  if(d>lim){dx=dx/d*lim;dy=dy/d*lim}
+  aimX=dx/lim; aimY=dy/lim;
+  if(Math.hypot(aimX,aimY)>.08)s.a=Math.atan2(aimY,aimX);
+  aimKnob.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
+}
+aimStick.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  aimPid=e.pointerId;
+  aimStick.setPointerCapture?.(aimPid);
+  moveAim(e);
+});
+aimStick.addEventListener('pointermove',e=>{
+  if(e.pointerId===aimPid)moveAim(e);
+});
+function endAim(e){
+  if(aimPid===null||e.pointerId===aimPid){
+    aimPid=null;
+    aimX=Math.cos(s.a); aimY=Math.sin(s.a);
+    aimKnob.style.transform='translate(-50%,-50%)';
+  }
+}
+aimStick.addEventListener('pointerup',endAim);
+aimStick.addEventListener('pointercancel',endAim);
 $('switchGun').addEventListener('click',switchGun);
 $('bomb').addEventListener('click',useBomb);
 $('restart').addEventListener('click',reset);
