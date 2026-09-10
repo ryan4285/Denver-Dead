@@ -8,7 +8,9 @@
 <meta property="og:title" content="Denver Dead">
 <meta property="og:description" content="Survive the streets of Denver in this fast-paced zombie shooter.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="./denver-dead-preview.jpg">
+<meta property="og:url" content="https://ryan4285.github.io/Denver-Dead/?v=48">
+<meta property="og:image" content="https://ryan4285.github.io/Denver-Dead/denver-dead-preview.jpg?v=48">
+<meta property="og:image:secure_url" content="https://ryan4285.github.io/Denver-Dead/denver-dead-preview.jpg?v=48">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -16,10 +18,10 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Denver Dead">
 <meta name="twitter:description" content="Survive the streets of Denver in this fast-paced zombie shooter.">
-<meta name="twitter:image" content="./denver-dead-preview.jpg">
-<link rel="image_src" href="./denver-dead-preview.jpg">
+<meta name="twitter:image" content="https://ryan4285.github.io/Denver-Dead/denver-dead-preview.jpg?v=48">
+<link rel="image_src" href="https://ryan4285.github.io/Denver-Dead/denver-dead-preview.jpg?v=48">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>Denver Dead — v47</title>
+<title>Denver Dead</title>
 <style>
 html,body{margin:0;background:#0f1113;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overscroll-behavior:none;-webkit-text-size-adjust:100%}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}button{font-family:inherit}.controls,.controls *,#gameCanvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.controls,.controls *{outline:none}.controls{touch-action:none}
 #game{max-width:760px;margin:auto;padding:10px;position:relative}.hud{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:12px;text-align:center}.hud>div{background:#1a1d20;border:1px solid #30353a;border-radius:9px;padding:6px}.muted{color:#9ba3aa;font-size:10px}.healthRow{display:flex;justify-content:space-between;font-size:12px;margin:7px 0 3px}#healthbar{height:14px;background:#3a1d1d;border:1px solid #454b51;border-radius:999px;overflow:hidden}#healthfill{height:100%;background:#44c767;width:100%}#gameCanvas{width:100%;display:block;background:#000;border:1px solid #333;border-radius:12px;touch-action:none}
@@ -94,7 +96,7 @@ function updateHighsFromRun(){if(!s)return;updateHighsFromState(s)}
 const RUN_KEY='denverDeadRun';let lastAutosave=0;
 function getSavedRun(){try{let r=JSON.parse(localStorage.getItem(RUN_KEY));return r&&r.state&&!r.state.over?r:null}catch{return null}}
 function updateContinueButton(){let has=!!getSavedRun();$('continueBtn').classList.toggle('hidden',!has)}
-function saveRun(force=false){if(!started||!s||s.over)return;let now=performance.now();if(!force&&now-lastAutosave<1800)return;lastAutosave=now;updateHighsFromRun();try{localStorage.setItem(RUN_KEY,JSON.stringify({version:47,savedAt:Date.now(),difficulty:selectedDiff,state:s,zombies:z,drops,bombDrops,specialDrops,doubleDrops,survivors,companions,barrels,cars:cars.map(q=>({...q}))}))}catch{}}
+function saveRun(force=false){if(!started||!s||s.over)return;let now=performance.now();if(!force&&now-lastAutosave<1800)return;lastAutosave=now;updateHighsFromRun();try{localStorage.setItem(RUN_KEY,JSON.stringify({version:48,savedAt:Date.now(),difficulty:selectedDiff,state:s,zombies:z,drops,bombDrops,specialDrops,doubleDrops,survivors,companions,barrels,cars:cars.map(q=>({...q}))}))}catch{}}
 function clearRun(){try{localStorage.removeItem(RUN_KEY)}catch{}updateContinueButton()}
 function restoreRun(){let r=getSavedRun();if(!r)return false;selectedDiff=r.difficulty||'normal';s=r.state;if((r.version||0)<26)s.score=0;updateHighsFromState(s);z=Array.isArray(r.zombies)?r.zombies:[];enforceSingleScreamer();drops=Array.isArray(r.drops)?r.drops:[];bombDrops=Array.isArray(r.bombDrops)?r.bombDrops:[];specialDrops=Array.isArray(r.specialDrops)?r.specialDrops:[];doubleDrops=Array.isArray(r.doubleDrops)?r.doubleDrops:[];survivors=Array.isArray(r.survivors)?r.survivors:[];companions=Array.isArray(r.companions)?r.companions:[];barrels=Array.isArray(r.barrels)?r.barrels:[];cars.splice(0,cars.length,...baseCars.map((q,i)=>({...q,id:i,hp:q.dur,usable:true,occupied:false})));if(Array.isArray(r.cars))r.cars.forEach((q,i)=>{if(cars[i])Object.assign(cars[i],q)});if(s.inCar!==null){let q=cars[s.inCar];if(!q||!q.usable){s.inCar=null;s.carHp=0}else{q.occupied=true;q.hp=Math.max(0,Math.min(q.dur,s.carHp));s.carHp=q.hp;q.x=s.x;q.y=s.y}}bul=[];blood=[];tr=[];rings=[];joyX=joyY=0;aimX=Math.cos(s.a||0);aimY=Math.sin(s.a||0);started=true;paused=false;last=performance.now();lastShot=0;$('startScreen').classList.add('hidden');$('pauseScreen').classList.add('hidden');$('deathScreen').classList.add('hidden');[...document.querySelectorAll('.diff')].forEach(x=>x.style.outline=x.dataset.diff===selectedDiff?'2px solid #d4b45d':'');hud();say('RUN RESTORED',1.5);startMusic();return true}
 function beep(freq=300,dur=.06,type='square',gain=.03){if(!soundOn)return;try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=gain;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur)}catch{}}
@@ -166,7 +168,7 @@ window.addEventListener('pagehide',()=>{updateHighsFromRun();saveRun(true)});doc
 })();
 </script>
 <script>
-if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs)await r.unregister();const keys=await caches.keys();for(const k of keys)if(k.startsWith('denver-dead-'))await caches.delete(k);await navigator.serviceWorker.register('./sw.js?v=47')}catch(e){console.warn(e)}})}
+if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs)await r.unregister();const keys=await caches.keys();for(const k of keys)if(k.startsWith('denver-dead-'))await caches.delete(k);await navigator.serviceWorker.register('./sw.js?v=48')}catch(e){console.warn(e)}})}
 </script>
 </body>
 </html>
